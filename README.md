@@ -38,3 +38,29 @@ Solar-Defect-Detection/
     ├── googlenet_rgb.pth
     ├── efficientnet_el_full.pth
     └── efficientnet_best_thermal_model.pth
+
+ ## ⚙️ Setup & Installation
+
+### 1. Prerequisites
+* **Python 3.10+** (Ensure it is added to your system PATH)
+* **Node.js & npm** (For the React Frontend)
+
+### 2. Backend Setup
+Navigate to the `backend` directory to set up the Python environment.
+
+```bash
+cd backend
+
+# Option 1: Install using requirements.txt (Recommended)
+pip install -r requirements.txt
+
+# Option 2: Manual Install (If you haven't created the file yet)
+pip install fastapi uvicorn python-multipart torch torchvision pillow numpy
+
+
+cd ../frontend
+npm install
+npm run dev
+
+cd ../backend
+uvicorn main:app --reload
