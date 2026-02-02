@@ -39,7 +39,10 @@ Solar-Defect-Detection/
     ├── efficientnet_el_full.pth
     └── efficientnet_best_thermal_model.pth
 
- ## ⚙️ Setup & Installation
+
+
+
+## ⚙️ Setup & Installation
 
 ### 1. Prerequisites
 * **Python 3.10+** (Ensure it is added to your system PATH)
