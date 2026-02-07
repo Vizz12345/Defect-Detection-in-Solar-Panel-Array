@@ -32,24 +32,29 @@ export default function SolarDefectDetector() {
     setResult(null);
   };
 
+  /* 🔥 REAL BACKEND CALL HERE */
   const handlePredict = async () => {
     if (!image) return;
     setIsLoading(true);
 
-    /* MOCK AUTOMATIC MODEL ROUTING */
-    let assignedModel = "EfficientNet-B2";
-    if (imageType === "EL") assignedModel = "EfficientNet";
-    if (imageType === "Thermal") assignedModel = "GoogLeNet";
+    const formData = new FormData();
+    formData.append("file", image);
+    formData.append("image_type", imageType);
 
-    setTimeout(() => {
-      setResult({
-        label: "Dusty Solar Panel",
-        confidence: "0.92",
-        inference: "0.34s",
-        modelUsed: assignedModel,
+    try {
+      const response = await fetch("http://127.0.0.1:8000/predict", {
+        method: "POST",
+        body: formData,
       });
-      setIsLoading(false);
-    }, 900);
+
+      const data = await response.json();
+      setResult(data);
+    } catch (error) {
+      console.error(error);
+      alert("Backend not reachable");
+    }
+
+    setIsLoading(false);
   };
 
   return (
