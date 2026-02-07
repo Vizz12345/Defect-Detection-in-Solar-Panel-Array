@@ -32,7 +32,7 @@ export default function SolarDefectDetector() {
     setResult(null);
   };
 
-  /* 🔥 REAL BACKEND CALL HERE */
+  /* BACKEND CALL HERE */
   const handlePredict = async () => {
     if (!image) return;
     setIsLoading(true);
