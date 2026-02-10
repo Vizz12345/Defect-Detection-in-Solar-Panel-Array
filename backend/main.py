@@ -3,6 +3,8 @@ import time
 import torch
 import torch.nn as nn
 from torchvision import models, transforms
+from torchvision.models import googlenet, GoogLeNet_Weights
+from torchvision.models import efficientnet_v2_s, EfficientNet_V2_S_Weights
 from PIL import Image
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,7 +12,7 @@ from contextlib import asynccontextmanager
 
 # --- 1. CONFIGURATION & CLASS MAPPINGS ---
 RGB_CLASSES = [
-    "Bird-drop", "Clean", "Dusty", 
+    "Bird-drop", "Clean", "Dusty",
     "Electrical-damage", "Physical-Damage", "Snow-Covered"
 ]
 
@@ -37,54 +39,55 @@ class_registry = {
 # --- 2. MODEL LOADERS ---
 
 def get_googlenet_model(path, num_classes):
-    model = models.googlenet(weights=None)
+    model = googlenet(weights=GoogLeNet_Weights.DEFAULT)
     model.fc = nn.Linear(model.fc.in_features, num_classes)
-    
+
     # Handle Aux classifiers
-    model.aux1.fc2 = nn.Linear(model.aux1.fc2.in_features, num_classes)
-    model.aux2.fc2 = nn.Linear(model.aux2.fc2.in_features, num_classes)
-    
+    # model.aux1.fc2 = nn.Linear(model.aux1.fc2.in_features, num_classes)
+    # model.aux2.fc2 = nn.Linear(model.aux2.fc2.in_features, num_classes)
+
     try:
         state_dict = torch.load(path, map_location=torch.device('cpu'))
         model.load_state_dict(state_dict, strict=False)
         print(f"Loaded GoogLeNet from {path}")
     except Exception as e:
         print(f"Error loading GoogLeNet ({path}): {e}")
-    
+
     model.eval()
     return model
 
 def get_efficientnet_v2_s_model(path, num_classes):
     """ Used for EL images """
-    model = models.efficientnet_v2_s(weights=None)
+    # model = models.efficientnet_v2_s(weights=None)
+    model = efficientnet_v2_s(weights=EfficientNet_V2_S_Weights.DEFAULT)
     model.classifier[1] = nn.Linear(model.classifier[1].in_features, num_classes)
-    
+
     try:
         state_dict = torch.load(path, map_location=torch.device('cpu'))
         model.load_state_dict(state_dict)
         print(f"Loaded EfficientNetV2-S from {path}")
     except Exception as e:
         print(f"Error loading EfficientNetV2-S ({path}): {e}")
-    
+
     model.eval()
     return model
 
 def get_efficientnet_v2_m_model(path, num_classes):
-    """ 
+    """
     Used for Thermal images.
     Based on logs: Stem=24, Head=1280, Depth > Small.
     Matches EfficientNetV2-M.
     """
     model = models.efficientnet_v2_m(weights=None)
     model.classifier[1] = nn.Linear(model.classifier[1].in_features, num_classes)
-    
+
     try:
         state_dict = torch.load(path, map_location=torch.device('cpu'))
         model.load_state_dict(state_dict)
         print(f"Loaded EfficientNetV2-M from {path}")
     except Exception as e:
         print(f"Error loading EfficientNetV2-M ({path}): {e}")
-    
+
     model.eval()
     return model
 
@@ -97,16 +100,16 @@ async def lifespan(app: FastAPI):
 
     # EL -> EfficientNetV2-S
     models_registry["EL"] = get_efficientnet_v2_s_model(
-        "../Models/efficientnet_el_full.pth", 
+        "../Models/efficientnet_el_full.pth",
         len(EL_CLASSES)
     )
-    
+
     # Thermal -> EfficientNetV2-M (Updated)
     models_registry["Thermal"] = get_efficientnet_v2_m_model(
-        "../Models/efficientnet_best_thermal_model.pth", 
+        "../Models/efficientnet_best_thermal_model.pth",
         len(THERMAL_CLASSES)
     )
-    
+
     yield
     models_registry.clear()
 
@@ -139,7 +142,7 @@ async def predict(
         return {"error": "Invalid image type or model not loaded"}
 
     start_time = time.time()
-    
+
     try:
         image_data = await file.read()
         image = Image.open(io.BytesIO(image_data)).convert("RGB")
@@ -151,12 +154,13 @@ async def predict(
         with torch.no_grad():
             outputs = selected_model(input_tensor)
             probabilities = torch.nn.functional.softmax(outputs[0], dim=0)
+            print(probabilities)
             confidence, predicted_idx = torch.max(probabilities, 0)
 
         inference_time = time.time() - start_time
-        
+
         predicted_label = class_names[predicted_idx.item()]
-        
+
         # Determine architecture name for the UI
         if image_type == "RGB":
             arch_name = "GoogLeNet"
