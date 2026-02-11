@@ -5,6 +5,7 @@ import torch.nn as nn
 from torchvision import models, transforms
 from torchvision.models import googlenet, GoogLeNet_Weights
 from torchvision.models import efficientnet_v2_s, EfficientNet_V2_S_Weights
+from torchvision.models import efficientnet_v2_m, EfficientNet_V2_M_Weights
 from PIL import Image
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -78,7 +79,7 @@ def get_efficientnet_v2_m_model(path, num_classes):
     Based on logs: Stem=24, Head=1280, Depth > Small.
     Matches EfficientNetV2-M.
     """
-    model = models.efficientnet_v2_m(weights=None)
+    model = efficientnet_v2_m(weights=EfficientNet_V2_M_Weights.DEFAULT)
     model.classifier[1] = nn.Linear(model.classifier[1].in_features, num_classes)
 
     try:
